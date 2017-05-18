@@ -44,5 +44,6 @@ module.exports = function (sequelize, DataTypes) {
                 }
             },
         });
+    User.register
     return User;
 };

@@ -1,0 +1,17 @@
+doctype html
+html
+  head
+    title= title
+    link(rel='stylesheet', href='/stylesheets/style.css')
+  body
+    block menu
+      ul
+        li
+          a(href='/membership') Register
+        if isAuthenticated
+          li
+            a(href='/logout') Logout
+        else
+          li
+            a(href='/login') Login
+    block content
