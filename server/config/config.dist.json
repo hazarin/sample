@@ -5,7 +5,22 @@
     "database": "dailyclock_dev",
     "host": "127.0.0.1",
     "port": 5432,
-    "dialect": "postgres"
+    "dialect": "postgres",
+    "mailer": {
+      "from": "no-reply@example.com",
+      "host": "smtp.gmail.com",
+      // hostname
+      "secureConnection": "true",
+      // use SSL
+      "port": 465,
+      // port for secure SMTP
+      "transportMethod": "SMTP",
+      // default is SMTP. Accepts anything that nodemailer accepts
+      "auth": {
+        "user": "gmail.user@gmail.com",
+        "pass": ""
+      }
+    }
   },
   "test": {
     "username": "root",
@@ -13,7 +28,22 @@
     "database": "dailyclock_test",
     "host": "127.0.0.1",
     "port": 5432,
-    "dialect": "postgres"
+    "dialect": "postgres",
+    "mailer": {
+      "from": "no-reply@example.com",
+      "host": "smtp.gmail.com",
+      // hostname
+      "secureConnection": "true",
+      // use SSL
+      "port": 465,
+      // port for secure SMTP
+      "transportMethod": "SMTP",
+      // default is SMTP. Accepts anything that nodemailer accepts
+      "auth": {
+        "user": "gmail.user@gmail.com",
+        "pass": ""
+      }
+    }
   },
   "production": {
     "username": "root",
@@ -21,6 +51,21 @@
     "database": "dailyclock_production",
     "host": "127.0.0.1",
     "port": 5432,
-    "dialect": "postgres"
+    "dialect": "postgres",
+    "mailer": {
+      "from": "no-reply@example.com",
+      "host": "smtp.gmail.com",
+      // hostname
+      "secureConnection": "true",
+      // use SSL
+      "port": 465,
+      // port for secure SMTP
+      "transportMethod": "SMTP",
+      // default is SMTP. Accepts anything that nodemailer accepts
+      "auth": {
+        "user": "gmail.user@gmail.com",
+        "pass": ""
+      }
+    }
   }
 }

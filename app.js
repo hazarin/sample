@@ -1,24 +1,30 @@
-var express = require('express');
-var path = require('path');
-var favicon = require('serve-favicon');
-var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
-var expressSession = require('express-session');
-var passport = require('passport');
-var flash = require('express-flash');
+const env       = process.env.NODE_ENV || 'development';
+const config    = require(__dirname + '/server/config/config.json')[env];
 
-var index = require('./routes/index');
-var users = require('./routes/users');
-var membership = require('./routes/membership');
-var login = require('./routes/login');
-var logout = require('./routes/logout');
+const express = require('express');
+const path = require('path');
+const favicon = require('serve-favicon');
+const logger = require('morgan');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
+const expressSession = require('express-session');
+const passport = require('passport');
+const flash = require('express-flash');
+const mailer = require('express-mailer');
 
-var models = require('./server/models');
+const index = require('./routes/index');
+const login = require('./routes/login');
+const logout = require('./routes/logout');
+const membership = require('./routes/membership');
+const register_success = require('./routes/register_success');
 
-var User = models.User;
+const models = require('./server/models');
 
-var app = express();
+const User = models.User;
+
+const app = express();
+
+mailer.extend(app, config.mailer);
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -33,7 +39,7 @@ app.use(cookieParser());
 app.use(expressSession({
   secret: 'adailyclock secret',
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
 }));
 app.use(flash());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -52,18 +58,25 @@ app.use(function(req,res,next){
   res.locals.isAuthenticated = req.isAuthenticated();
   res.locals.passport = passport;
   res.locals.User = User;
+  res.locals.mailer = app.mailer;
+  res.locals.app = app;
   next();
 });
 
+// var Router = require('named-routes');
+// var router = new Router();
+// router.extendExpress(app);
+// router.registerAppHelpers(app);
+
 app.use('/', index);
-app.use('/users', users);
 app.use('/membership', membership);
 app.use('/login', login);
 app.use('/logout', logout);
+app.use('/register/success', register_success);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
-  var err = new Error('Not Found');
+  const err = new Error('Not Found');
   err.status = 404;
   next(err);
 });

@@ -1,10 +1,9 @@
 const express = require('express');
 const router = express.Router();
 
-/* Logout page. */
+/* GET success registration page. */
 router.get('/', function(req, res, next) {
-  req.logout();
-  res.redirect('/');
+  res.render('register_success', { title: 'Express' });
 });
 
 module.exports = router;

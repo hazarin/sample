@@ -15,7 +15,7 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE,
       },
-      username: {
+      email: {
         type: Sequelize.STRING,
         allowNull: false,
         unique: true,
@@ -30,15 +30,16 @@ module.exports = {
       },
       activationKey: {
         type: Sequelize.STRING,
-        allowNull: false,
+        allowNull: true,
       },
       resetPasswordKey: {
         type: Sequelize.STRING,
-        allowNull: false,
+        allowNull: true,
       },
       verified: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
+        defaultValue: false,
       },
       firstName: {
         type: Sequelize.STRING,

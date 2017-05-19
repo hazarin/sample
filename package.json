@@ -11,6 +11,7 @@
     "debug": "~2.6.3",
     "express": "~4.15.2",
     "express-flash": "0.0.2",
+    "express-mailer": "^0.3.1",
     "express-session": "^1.15.3",
     "morgan": "~1.8.1",
     "passport": "^0.3.2",
