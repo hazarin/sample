@@ -14,7 +14,9 @@ var membership = require('./routes/membership');
 var login = require('./routes/login');
 var logout = require('./routes/logout');
 
-var User = require('./server/models').User;
+var models = require('./server/models');
+
+var User = models.User;
 
 var app = express();
 

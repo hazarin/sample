@@ -1,49 +1,53 @@
-'use strict';
-var passportLocalSequelize = require('passport-local-sequelize');
+const passportLocalSequelize = require('passport-local-sequelize')
 
-module.exports = function (sequelize, DataTypes) {
-    var User = passportLocalSequelize.defineUser(
-        sequelize,
-        {
-            firstName: {
-                type: DataTypes.STRING,
-                allowNull: true
-            },
-            surName: {
-                type: DataTypes.STRING,
-                allowNull: true
-            },
-            address: {
-                type: DataTypes.STRING,
-                allowNull: true
-            },
-            postalCode: {
-                type: DataTypes.STRING,
-                allowNull: true
-            },
-            city: {
-                type: DataTypes.STRING,
-                allowNull: true
-            },
-            phone: {
-                type: DataTypes.STRING,
-                allowNull: true
-            },
-            country: {
-                type: DataTypes.STRING,
-                allowNull: true
-            },
+module.exports = (sequelize, DataTypes) => {
+  const User = passportLocalSequelize.defineUser(
+    sequelize,
+    {
+      firstName: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      surName: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      address: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      postalCode: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      city: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      phone: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      country: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      membership: {
+        type: DataTypes.ENUM,
+        values: ['time', 'calendar', 'pro'],
+        allowNull: true,
+        defaultValue: null,
+      },
+    },
+    {
+      classMethods: {
+        associate: (models) => {
+          User.hasMany(models.Product, {
+            foreignKey: 'user_id',
+            as: 'Products',
+          })
         },
-        {
-            classMethods: {
-                associate: (models) => {
-                    User.hasMany(models.Calendar, {
-                        foreignKey: 'user_id',
-                        as: 'Calendars',
-                    });
-                }
-            },
-        });
-    User.register
-    return User;
+      },
+    });
+  return User
 };

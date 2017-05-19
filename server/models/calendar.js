@@ -1,22 +1,22 @@
-'use strict';
-module.exports = function(sequelize, DataTypes) {
-    const Calendar = sequelize.define('Calendar',
-        {
-            name: DataTypes.STRING
+module.exports = (sequelize, DataTypes) => {
+  const Calendar = sequelize.define('Calendar',
+    {
+      title: DataTypes.STRING,
+      allowNull: false,
+    },
+    {
+      classMethods: {
+        associate: (models) => {
+          Calendar.belongsTo(models.Product, {
+              foreignKey: 'product_id',
+              onDelete: 'CASCADE',
+            })
+          Calendar.hasMany(models.Activity, {
+            foreignKey: 'calendar_id',
+            as: 'Activities',
+          });
         },
-        {
-            classMethods: {
-                associate: (models) => {
-                    Calendar.hasMany(models.Activity, {
-                        foreignKey: 'calendar_id',
-                        as: 'Activities',
-                    });
-                    Calendar.belongsTo(models.User, {
-                        foreignKey: 'user_id',
-                        onDelete: 'CASCADE',
-                    });
-                },
-            },
-        });
-    return Calendar;
-};
+      },
+    })
+  return Calendar
+}
