@@ -23,6 +23,9 @@ const models = require('./server/models');
 const User = models.User;
 
 const app = express();
+//Swagger doc
+const sw = express();
+
 
 mailer.extend(app, config.mailer);
 
@@ -63,16 +66,27 @@ app.use(function(req,res,next){
   next();
 });
 
-// var Router = require('named-routes');
-// var router = new Router();
-// router.extendExpress(app);
-// router.registerAppHelpers(app);
+app.use('/v1', sw);
+const swagger = require('swagger-node-express').createNew(sw);
+swagger.setApiInfo(config.api_info);
+app.use('/api/doc', express.static(path.join(__dirname, 'server/doc')))
 
+
+// Local backend routes
 app.use('/', index);
 app.use('/membership', membership);
 app.use('/login', login);
 app.use('/logout', logout);
 app.use('/register/success', register_success);
+
+//REST Api end point
+require('./server/routes')(app);
+
+//REST Api doc endpoint
+app.get('/api/doc', function (req, res, next) {
+  res.sendFile(__dirname + '/server/doc/index.html');
+});
+swagger.configureSwaggerPaths('', 'api/doc', '');
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

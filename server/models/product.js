@@ -1,12 +1,14 @@
 module.exports = (sequelize, DataTypes) => {
   const Product = sequelize.define('Product',
     {
-      serial: DataTypes.STRING,
-      allowNull: false,
-    },
-    {
-      title: DataTypes.STRING,
-      allowNull: true,
+      serial: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      title: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
     },
     {
       classMethods: {

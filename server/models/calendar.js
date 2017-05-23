@@ -1,8 +1,10 @@
 module.exports = (sequelize, DataTypes) => {
   const Calendar = sequelize.define('Calendar',
     {
-      title: DataTypes.STRING,
-      allowNull: false,
+      title: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      }
     },
     {
       classMethods: {
