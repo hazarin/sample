@@ -1,16 +1,19 @@
 /**
- * Created by hazarin on 23.05.17.
+ * Created by hazarin on 21.05.17.
  */
 const userCtrl = require('../controllers/user');
 const productCtrl = require('../controllers/product');
+const calendarCtrl = require('../controllers/calendar');
+const activityCtrl = require('../controllers/activity');
 
 module.exports = (app) => {
+
   app.get('/api', (req, res) => res.status(200).send({
-    message: 'Welcome to the API!',
+    message: 'Welcome to the A Daily Clock API!',
   }));
 
   app.use('/api/user', userCtrl);
-
   app.use('/api/product', productCtrl);
-
+  app.use('/api/calendar', calendarCtrl);
+  app.use('/api/activity', activityCtrl);
 }
