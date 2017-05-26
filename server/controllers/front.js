@@ -6,33 +6,38 @@ const router = express.Router();
 const models = require('../models');
 
 router
+.get('/membership', (req, res, next) => {
+  return models.Catalog
+  .findAll({type: 'membership'})
+  .then((items) => {
+    return res.status(200).send(items);
+  }).catch(error => res.status(400).send(error));
+})
 .get('/', (req, res, next) => {
-    let User = res.locals.User
+  let User = res.locals.User
 
-    if (!req.isAuthenticated()) {
-      return res.status(401).send({message: 'Authentication requred'});
+  if (!req.isAuthenticated()) {
+    return res.status(401).send({message: 'Authentication requred'})
+  }
+  return User.find({where: {id: req.user.id}}).then(user => {
+    if (!user) {
+      return res.status(404).send({message: 'User no found'})
     }
-    return User.find({where: {id: req.user.id}})
-    .then(user => {
-      if (!user) {
-        return res.status(404).send({message: 'User no found'})
-      }
-      res.status(200).send({
-        email: user.email,
-        verified: user.verified,
-        firstName: user.firstName,
-        surName: user.surName,
-        address: user.address,
-        postalCode: user.postalCode,
-        city: user.city,
-        phone: user.phone,
-        country: user.country,
-        membership: user.membership,
-      })
+    res.status(200).send({
+      email: user.email,
+      verified: user.verified,
+      firstName: user.firstName,
+      surName: user.surName,
+      address: user.address,
+      postalCode: user.postalCode,
+      city: user.city,
+      phone: user.phone,
+      country: user.country,
+      membership: user.membership,
     })
-    .catch(error => res.status(400).send(error))
+  }).catch(error => res.status(400).send(error))
 
-  })
+})
 .get('/logout', (req, res, next) => {
   if (req.isAuthenticated() === false) {
     return res.status(400).send({message: 'Not logged in'});
