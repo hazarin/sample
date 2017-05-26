@@ -1,8 +1,9 @@
 /**
  * Created by hazarin on 26.05.17.
  */
-const express = require('express')
-const router = express.Router()
+const express = require('express');
+const router = express.Router();
+const models = require('../models');
 
 router
 .get('/', (req, res, next) => {
@@ -11,7 +12,8 @@ router
     if (!req.isAuthenticated()) {
       return res.status(401).send({message: 'Authentication requred'});
     }
-    return User.find({where: {id: req.user.id}}).then(user => {
+    return User.find({where: {id: req.user.id}})
+    .then(user => {
       if (!user) {
         return res.status(404).send({message: 'User no found'})
       }
@@ -27,7 +29,8 @@ router
         country: user.country,
         membership: user.membership,
       })
-    }).catch(error => res.status(400).send(error))
+    })
+    .catch(error => res.status(400).send(error))
 
   })
 .get('/logout', (req, res, next) => {
@@ -36,6 +39,20 @@ router
   }
   req.logout();
   return res.status(200).send({message: 'Logged out'});
+})
+.post('/contact', (req, res, next) => {
+  let user = req.isAuthenticated() ? req.user : null;
+
+  if (user !== null) {
+    req.body.user_id = user.id;
+  };
+
+  return models.Message
+  .build(req.body)
+  .save()
+  .then(message => res.status(201).send({message: 'Message send'}))
+    .catch(error => res.status(400).send(error));
+
 })
 .post('/login', (req, res, next) => {
   let User = res.locals.User;
