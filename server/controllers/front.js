@@ -6,7 +6,48 @@ const router = express.Router();
 const models = require('../models');
 
 router
+.post('/reset', (req, res, next) => {
+
+  if (req.isAuthenticated()) {
+    return res.status(400).send({message: 'Already logged in'});
+  }
+
+  return models.User.findOne({where: {email: req.body.email, verified: true}})
+  .then(user => {
+
+    if (user === null) {
+      return res.status(404).send({message: 'User no found'})
+    }
+
+    models.User.setResetPasswordKey(user.email, (err, user) => {
+      let mailer = res.locals.mailer;
+      let config = res.locals.app.get('config');
+      let dev_mode = res.locals.app.get('env') === 'development';
+      var restoreUrl = config.frontend.password_restore_uri;
+
+      if (err !== null) {
+        res.status(400).send(err);
+      }
+
+      restoreUrl = restoreUrl + user.resetPasswordKey;
+
+      mailer.send('email_reset', {
+        to: dev_mode ? config.frontend.debug_mail : user.email,
+        subject: 'A Daily Clock password reset',
+        link: restoreUrl,
+      }, (err) => {
+        if (err) {
+          console.log(err);
+          return res.status(400).send('There was an error sending the email');
+        }
+        return res.status(200).send({message: 'Mail send'});
+      });
+    });
+  });
+
+})
 .get('/membership', (req, res, next) => {
+
   return models.Catalog
   .findAll({type: 'membership'})
   .then((items) => {
@@ -14,12 +55,12 @@ router
   }).catch(error => res.status(400).send(error));
 })
 .get('/', (req, res, next) => {
-  let User = res.locals.User
 
   if (!req.isAuthenticated()) {
     return res.status(401).send({message: 'Authentication requred'})
   }
-  return User.find({where: {id: req.user.id}}).then(user => {
+
+  return models.User.find({where: {id: req.user.id}}).then(user => {
     if (!user) {
       return res.status(404).send({message: 'User no found'})
     }

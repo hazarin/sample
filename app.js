@@ -43,10 +43,16 @@ app.use(expressSession({
   secret: 'adailyclock secret',
   resave: false,
   saveUninitialized: false,
+  cookie: {
+    maxAge  : new Date(Date.now() + 7200000), //2 Hour
+    expires : new Date(Date.now() + 7200000), //2 Hour
+  },
 }));
 app.use(flash());
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.set('config', config);
+app.set('config', config);
 app.set('User', User);
 app.set('Passport', passport);
 
