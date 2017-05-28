@@ -6,6 +6,47 @@ const router = express.Router();
 const models = require('../models');
 
 router
+.post('/reset/:resetKey', (req, res, next) => {
+  if (req.isAuthenticated()) {
+    return res.status(400).send({message: 'Already logged in'});
+  }
+
+  const password = req.body.password_first === req.body.password_second ? req.body.password_first : false;
+  if (password === false) {
+    return res.status(400).send({message: "Passwords didn't match"});
+  }
+
+  return models.User.findOne({where: {resetPasswordKey: req.params.resetKey, verified: true}})
+  .then(user => {
+    if (user === null) {
+      return res.status(404).send({message: 'User no found'});
+    }
+
+    models.User.resetPassword(user.email, password, req.params.resetKey, (err, user) => {
+      if (err !== null) {
+        return res.status(400).send(err);
+      }
+
+      return res.status(200).send({message: 'Password successfully changed'});
+    })
+
+  }).catch(error => res.status(400).send(error));
+})
+.get('/reset/:resetKey', (req, res, next) => {
+  if (req.isAuthenticated()) {
+    return res.status(400).send({message: 'Already logged in'});
+  }
+
+  return models.User.findOne({where: {resetPasswordKey: req.params.resetKey, verified: true}})
+  .then(user => {
+    if (user === null) {
+      return res.status(404).send({message: 'User no found'});
+    }
+
+    return res.status(200).send({message: 'User exists'});
+  }).catch(error => res.status(400).send(error));
+
+  })
 .post('/reset', (req, res, next) => {
 
   if (req.isAuthenticated()) {
@@ -26,7 +67,7 @@ router
       var restoreUrl = config.frontend.password_restore_uri;
 
       if (err !== null) {
-        res.status(400).send(err);
+        return res.status(400).send(err);
       }
 
       restoreUrl = restoreUrl + user.resetPasswordKey;
