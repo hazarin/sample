@@ -18,8 +18,8 @@
       }
     },
     "frontend": {
-      "confirmation_email_uri": "http://localhost:4200/confirm/email/",
-      "password_reset_uri": "http://localhost:4200/reset/",
+      "confirmation_email_uri": "http://localhost:4200/confirm/",
+      "password_reset_uri": "http://localhost:4200/restore/",
       "mail_from": "admin@adailyclock.com",
       "debug_mail": "admin@adailyclock.com"
     },
@@ -51,8 +51,8 @@
       }
     },
     "frontend": {
-      "confirmation_email_uri": "http://localhost:4200/confirm/email/",
-      "password_reset_uri": "http://localhost:4200/password/reset/",
+      "confirmation_email_uri": "http://localhost:4200/confirm/",
+      "password_reset_uri": "http://localhost:4200/restore/",
       "mail_from": "admin@adailyclock.com",
       "debug_mail": "admin@adailyclock.com"
     },
@@ -84,8 +84,8 @@
       }
     },
     "frontend": {
-      "confirmation_email_uri": "http://localhost:4200/confirm/email/",
-      "password_reset_uri": "http://localhost:4200/password/reset/",
+      "confirmation_email_uri": "http://localhost:4200/confirm/",
+      "password_reset_uri": "http://localhost:4200/restore/",
       "mail_from": "admin@adailyclock.com",
       "debug_mail": "admin@adailyclock.com"
     },

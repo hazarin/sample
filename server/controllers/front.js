@@ -6,6 +6,47 @@ const router = express.Router();
 const models = require('../models');
 
 router
+.post('/register', (req, res, next) => {
+  if (req.isAuthenticated()) {
+    return res.status(400).send({message: 'Already logged in'});
+  }
+
+  const password = req.body.password_first === req.body.password_second ? req.body.password_first : false;
+  if (password === false) {
+    return res.status(400).send({message: "Passwords didn't match"});
+  }
+  const email = req.body.email_first === req.body.email_second ? req.body.email_first : false;
+  if (email === false) {
+    return res.status(400).send({message: "Email didn't match"});
+  }
+  req.body.email = req.body.email_first;
+
+  models.User.register(req.body, req.body.password_first, (err, user) => {
+    let mailer = res.locals.mailer;
+    let config = res.locals.app.get('config');
+    let dev_mode = res.locals.app.get('env') === 'development';
+    var confirmUrl = config.frontend.confirmation_email_uri;
+
+    if (err !== null) {
+      return res.status(400).send(err);
+    } else {
+      let mailer = res.locals.mailer;
+      confirmUrl = confirmUrl + user.activationKey;
+      mailer.send('email_confirmation', {
+        to: dev_mode ? config.frontend.debug_mail : user.email,
+        subject: 'A Daily Clock account confirmation',
+        link: confirmUrl,
+      }, (err) => {
+        if (err) {
+          console.log(err);
+          return res.status(400).send('There was an error sending the email');
+        }
+        return res.status(200).send({message: 'Mail send'});
+      });
+    }
+
+  });
+})
 .post('/reset/:resetKey', (req, res, next) => {
   if (req.isAuthenticated()) {
     return res.status(400).send({message: 'Already logged in'});
@@ -174,6 +215,6 @@ router
           : res.status(400).send(info);
     })(req, res, next);
 
-})
+});
 
-module.exports = router
+module.exports = router;
