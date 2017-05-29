@@ -18,6 +18,7 @@
       }
     },
     "frontend": {
+      "uri": "http://localhost:4200",
       "confirmation_email_uri": "http://localhost:4200/confirm/",
       "password_reset_uri": "http://localhost:4200/restore/",
       "mail_from": "admin@adailyclock.com",
@@ -51,6 +52,7 @@
       }
     },
     "frontend": {
+      "uri": "http://localhost:4200",
       "confirmation_email_uri": "http://localhost:4200/confirm/",
       "password_reset_uri": "http://localhost:4200/restore/",
       "mail_from": "admin@adailyclock.com",
@@ -84,6 +86,7 @@
       }
     },
     "frontend": {
+      "uri": "http://localhost:4200",
       "confirmation_email_uri": "http://localhost:4200/confirm/",
       "password_reset_uri": "http://localhost:4200/restore/",
       "mail_from": "admin@adailyclock.com",

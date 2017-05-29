@@ -126,7 +126,7 @@ router
       let mailer = res.locals.mailer;
       let config = res.locals.app.get('config');
       let dev_mode = res.locals.app.get('env') === 'development';
-      var restoreUrl = config.frontend.password_restore_uri;
+      var restoreUrl = config.frontend.password_reset_uri;
 
       if (err !== null) {
         return res.status(400).send(err);
