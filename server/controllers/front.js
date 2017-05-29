@@ -6,8 +6,29 @@ const router = express.Router();
 const models = require('../models');
 
 router
-.post('/register', (req, res, next) => {
+.get('/confirm/:confirmKey', (req, res, next) => {
   if (req.isAuthenticated()) {
+    return res.status(400).send({message: 'Already logged in'});
+  }
+
+  models.User.findOne(
+    {where: {activationKey: req.params.confirmKey, verified: false}}).
+    then(user => {
+
+      user.update({verified: true, activationKey: null})
+      .then(() => {
+          return res.status(200).send({message: 'Activation success'});
+        })
+      .catch((error) => {
+        return res.status(200).send(error);
+      });
+
+    }).catch(error => {
+      return res.status(200).send(error);
+    });
+})
+.post('/register', (req, res, next) => {
+  if(req.isAuthenticated()) {
     return res.status(400).send({message: 'Already logged in'});
   }
 
