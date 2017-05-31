@@ -6,6 +6,52 @@ const router = express.Router();
 const models = require('../models');
 
 router
+.get('/calendars', (req, res, next) => {
+
+  if (req.isAuthenticated() === false) {
+    return res.status(401).send({message: 'Authentication required'});
+  }
+
+  const Product = models.Product;
+
+  models.Calendar.findAll(
+    {
+      where: {'$Product.user_id$': req.user.id},
+      include: {model: Product, required: true }
+    }
+  )
+  .then(calendars => {
+    if(!calendars) {
+      return res.status(404).send({message: 'Calendars no found'})
+    }
+    return res.status(200).send(calendars);
+  })
+  .catch(
+    error => { return res.status(400).send(error) });
+
+})
+.get('/activities/:calendarId',  (req, res, next) => {
+  const Calendar = models.Calendar;
+
+  return models.Activity
+  .findAll(
+    {
+      where: {'$Calendar.id$': req.params.calendarId},
+      include: {model: Calendar, required: true }
+    }
+  )
+  .then(activities => {
+    if(!activities) {
+      return res.status(404).send({message: 'Activities no found'})
+    }
+    return res.status(200).send(activities);
+  })
+  .catch(
+    error => {
+      return res.status(400).send(error)
+    });
+
+})
 .get('/confirm/:confirmKey', (req, res, next) => {
   if (req.isAuthenticated()) {
     return res.status(400).send({message: 'Already logged in'});
