@@ -30,6 +30,49 @@ router
     error => { return res.status(400).send(error) });
 
 })
+.post('/activities/:calendarId', (req, res, next) => {
+  const Calendar = models.Calendar;
+  const Product = models.Product;
+  const Activity = models.Activity;
+
+  if (req.isAuthenticated() === false) {
+    return res.status(401).send({message: 'Authentication requred'});
+  }
+
+
+  models.Calendar.findOne(
+    {
+      where: {
+        '$Product.user_id$': req.user.id,
+        // id: req.params.calendarId
+      },
+      include: {model: Product, required: true }
+    }
+  )
+  .then((calendar) => {
+    if(calendar === null) {
+      return res.status(404).send({message: 'Calendar no found'})
+    }
+    req.body.calendar_id = req.params.calendarId;
+
+    return models.Activity.build(req.body)
+    .save()
+    .then(activity => {
+      return res.status(201).send(activity)
+    })
+    .catch(error => {
+      return res.status(400).send(error)
+    });
+
+
+  })
+  .catch(
+    error => {
+      return res.status(400).send(error)
+    });
+
+
+})
 .get('/activities/:calendarId',  (req, res, next) => {
   const Calendar = models.Calendar;
 
