@@ -4,8 +4,163 @@
 const express = require('express');
 const router = express.Router();
 const models = require('../models');
+const uuid = require('uuid');
+
+const addOrder = (user) => {
+  let serial = uuid.v1();
+
+  models.Catalog.findOne({where: {membership: 'time'}}).then((catalog) => {
+    models.Product.build({serial: serial}).save()
+    .then((product) => {
+      let title = 'Order to product with serial number ' + product.serial
+      models.Order.build(
+        {
+          title: title,
+          product_id: product.id,
+          user_id: user.id,
+          catalog_id: catalog.id,
+        }
+      ).save().then();
+    })
+    .catch((err) => {
+      return err;
+    });
+  });
+
+  return 0;
+}
+
+const activateOrder = (user) => {
+
+  models.Order.findOne({where: {user_id: user.id}})
+  .then((order) => {
+    order.getProduct()
+    .then(product => {
+
+      product.setUser(user)
+      .then(() => {
+        models.Calendar.build({title: product.serial, product_id: product.id})
+        .save().then();
+        return;
+      })
+    })
+  })
+
+}
 
 router
+.patch('/', (req, res, next) => {
+  let data = req.body;
+  let disabled = {
+    password: true,
+  };
+
+  if (req.isAuthenticated() === false) {
+    return res.status(401).send({message: 'Authentication requred'});
+  }
+
+  for(let key in disabled) {
+    if(data.hasOwnProperty(key)) {
+      delete data[key];
+    }
+  }
+
+  models.User.findById(req.user.id)
+  .then(user => {
+    user.update(data)
+    .then(user => {
+      return res.status(204).send();
+    })
+    .catch(err => {
+      return res.status(400).send(err);
+
+    })
+  })
+  .catch(err => {
+    return res.status(400).send(err);
+  })
+
+})
+.patch('/products', (req, res, next) => {
+  let data = req.body;
+  if (req.isAuthenticated() === false) {
+    return res.status(401).send({message: 'Authentication requred'});
+  }
+
+  for(let index in data) {
+    if (data.hasOwnProperty(index)) {
+      let attr = data[index];
+      models.Product.findById(index)
+      .then(product => {
+        product.title = attr;
+        product.save().then(product => {
+          product.getCalendars().then(calendars => {
+            if (calendars !== null && calendars.length > 0) {
+              calendars[0].update({title: product.title})
+              .then();
+            }
+          })
+        });
+      })
+      .catch(err => {
+        return res.status(400).send(err)
+      });
+    }
+  }
+
+  models.Product.findAll({where: {user_id: req.user.id}})
+  .then(products => {
+    return res.status(200).send(products);
+  })
+  .catch(err => {
+    return res.status(400).send(err);
+  });
+
+})
+.post('/products', (req, res, next) => {
+  if (req.isAuthenticated() === false) {
+    return res.status(401).send({message: 'Authentication requred'});
+  }
+
+  models.Product.findOne({
+    where: {
+      user_id: null,
+      serial: req.body.serial,
+    }
+  })
+  .then(product => {
+    if(product === null) {
+      return res.status(404).send({message: 'Product no found'})
+    }
+    product.setUser(req.user)
+    .then(product => {
+        models.Product.findAll({where: {user_id: req.user.id}})
+        .then(products => {
+          return res.status(200).send(products);
+        });
+      })
+    .catch(err => {
+      return res.status(400).send(err);
+    })
+  })
+  .catch(err => {
+      return res.status(400).send(err);
+  })
+
+})
+.get('/products', (req, res, next) => {
+  if (req.isAuthenticated() === false) {
+    return res.status(401).send({message: 'Authentication requred'});
+  }
+
+  models.Product.findAll({where: {user_id: req.user.id }})
+  .then(products => {
+    return res.status(200).send(products);
+  })
+  .catch(err => {
+    return res.status(400).send(err);
+  })
+})
 .get('/calendars', (req, res, next) => {
 
   if (req.isAuthenticated() === false) {
@@ -75,11 +230,16 @@ router
 })
 .get('/activities/:calendarId',  (req, res, next) => {
   const Calendar = models.Calendar;
+  let from = new Date(req.query.from);
+  let to = new Date(req.query.to);
 
   return models.Activity
   .findAll(
     {
-      where: {'$Calendar.id$': req.params.calendarId},
+      where: {
+        '$Calendar.id$': req.params.calendarId,
+        activity_date: {$between:[from, to]}
+      },
       include: {model: Calendar, required: true }
     }
   )
@@ -106,14 +266,15 @@ router
 
       user.update({verified: true, activationKey: null})
       .then(() => {
+          activateOrder(user);
           return res.status(200).send({message: 'Activation success'});
         })
       .catch((error) => {
-        return res.status(200).send(error);
+        return res.status(400).send(error);
       });
 
     }).catch(error => {
-      return res.status(200).send(error);
+      return res.status(400).send(error);
     });
 })
 .post('/register', (req, res, next) => {
@@ -135,11 +296,14 @@ router
     let mailer = res.locals.mailer;
     let config = res.locals.app.get('config');
     let dev_mode = res.locals.app.get('env') === 'development';
-    var confirmUrl = config.frontend.confirmation_email_uri;
+    let confirmUrl = config.frontend.confirmation_email_uri;
 
     if (err !== null) {
       return res.status(400).send(err);
     } else {
+
+      addOrder(user);
+
       let mailer = res.locals.mailer;
       confirmUrl = confirmUrl + user.activationKey;
       mailer.send('email_confirmation', {
