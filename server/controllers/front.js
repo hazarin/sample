@@ -185,6 +185,25 @@ router
     error => { return res.status(400).send(error) });
 
 })
+.delete('/activities/:calendarId/:activityId', (req, res, next) => {
+  const Calendar = models.Calendar;
+  const Product = models.Product;
+  const Activity = models.Activity;
+
+  if (req.isAuthenticated() === false) {
+    return res.status(401).send({message: 'Authentication requred'});
+  }
+
+  models.Activity.destroy({
+    where:{id: req.params.activityId, calendar_id: req.params.calendarId}})
+  .then(num => {
+    return res.sendStatus(204);
+  })
+  .catch(err => {
+    return res.status(400).send(error);
+  });
+
+})
 .post('/activities/:calendarId', (req, res, next) => {
   const Calendar = models.Calendar;
   const Product = models.Product;

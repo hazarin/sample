@@ -66,9 +66,9 @@ passport.deserializeUser(User.deserializeUser());
 app.use(function(req,res,next){
   res.header('Access-Control-Allow-Origin', app.get('config').frontend.uri);
   res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Headers', 'Content-Type')
-  res.header('Access-Control-Allow-Methods', 'GET, HEAD, POST, PATCH, OPTIONS')
-  res.header('Allow', 'GET, HEAD, POST, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.header('Access-Control-Allow-Methods', 'GET, HEAD, POST, PATCH, OPTIONS, DELETE');
+  res.header('Allow', 'GET, HEAD, POST, PATCH, OPTIONS, DELETE');
   res.locals.isAuthenticated = req.isAuthenticated();
   res.locals.passport = passport;
   res.locals.User = User;
