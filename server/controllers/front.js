@@ -213,7 +213,6 @@ router
     return res.status(401).send({message: 'Authentication requred'});
   }
 
-
   models.Calendar.findOne(
     {
       where: {
@@ -248,11 +247,15 @@ router
 
 })
 .get('/activities/:calendarId',  (req, res, next) => {
+  if (req.isAuthenticated() === false) {
+    return res.status(401).send({message: 'Authentication requred'});
+  }
+
   const Calendar = models.Calendar;
   let from = new Date(req.query.from);
   let to = new Date(req.query.to);
 
-  return models.Activity
+  models.Activity
   .findAll(
     {
       where: {

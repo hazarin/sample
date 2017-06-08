@@ -4,60 +4,99 @@
 const express = require('express');
 const router = express.Router();
 const uuid  = require('uuid/v4');
-const Product = require('../models').Product;
+const models = require('../models');
 
 /* Products api */
 router
 .get('/:userId',  (req, res, next) => {
-  let User = res.locals.User;
 
-  return Product
+  models.User.findById(req.params.userId)
+  .then(user => {
+    if (user === null) {
+      return res.status(404).send({message: 'User not found'})
+    }
+    models.Product
     .findAll({where: {user_id: req.params.userId}})
     .then(products => {
-      if(!products) {
-        return res.status(404).send({message: 'User no found'})
-      }
-      res.status(200).send();
+      return res.status(200).send(products)
     })
-    .catch(error => res.status(400).send(error));
+    .catch(err => {
+      return res.status(400).send(err)
+    });
+  })
+  .catch(err => {
+    return res.status(400).send(err)
+  });
 
 })
 .get('/:userId/:productId', (req, res, next) => {
-  return Product
-  .find({where: {user_id: req.params.userId}})
-  .then(product => {
-    if(!product) {
-      return res.status(404).send({message: 'Product no found'})
+  models.User.findById(req.params.userId)
+  .then(user => {
+    if (user === null) {
+      return res.status(404).send({message: 'User not found'})
     }
-    res.status(200).send(product);
+    models.Product
+    .find({where: {
+      user_id: req.params.userId,
+      id: req.params.productId
+    }})
+    .then(product => {
+      if(product === null) {
+        return res.status(404).send({message: 'Product no found'})
+      }
+      return res.status(200).send(product);
+    })
+    .catch(err => {
+      return res.status(400).send(err)
+    });
   })
-  .catch(error => res.status(400).send(error));
+  .catch(err => {
+    return res.status(400).send(err)
+  });
 })
 .post('/', (req, res, next) => {
   let serial = uuid();
-  return Product
+  models.Product
   .create({
     serial: serial,
     title: req.body.title,
   })
-  .then((product) =>
-    res.status(201).send(product)
-  )
-  .catch((error) => res.status(400).send(error));
+  .then((product) => {
+      return res.status(201).send(product)
+  })
+  .catch(err => {
+    return res.status(400).send(err)
+  });
 })
 .patch('/:userId/:productId', (req, res, hext) => {
-  return Product
-    .findById(req.params.productId)
+  models.User.findById(req.params.userId)
+  .then(user => {
+    if (user === null) {
+      return res.status(404).send({message: 'User not found'})
+    }
+    models.Product.findOne({
+      where: {id: req.params.productId, user_id: req.params.userId}
+    })
     .then( product => {
-      return product
+      if(product === null) {
+        return res.status(404).send({message: 'Product no found'})
+      }
+      product
       .update({title: req.body.title})
-      .then(
-        () => res.status(200).send(product)
-      )
-      .catch(
-        (error) => res.status(400).send(error)
-      );
+      .then( product => {
+        return res.status(200).send(product)
+      })
+      .catch(err => {
+        return res.status(400).send(err)
+      });
+    })
+    .catch(err => {
+      return res.status(400).send(err)
+    });
   })
+  .catch(err => {
+    return res.status(400).send(err)
+  });
 });
 
 module.exports = router;

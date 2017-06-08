@@ -3,12 +3,13 @@
  */
 const express = require('express')
 const router = express.Router()
+const models = require('../models');
 
 /* GET User. */
 router
 .get('/:id', (req, res, next) => {
 
-  return User.find({where: {id: req.params.id}}).then(user => {
+  return models.User.find({where: {id: req.params.id}}).then(user => {
     if (!user) {
       return res.status(404).send({message: 'User no found'})
     }
@@ -24,7 +25,9 @@ router
       country: user.country,
       membership: user.membership,
     })
-  }).catch(error => res.status(400).send(error))
+  }).catch(error => {
+    return res.status(400).send(error)
+  })
 
 })
 .get('/', (req, res, next) => {

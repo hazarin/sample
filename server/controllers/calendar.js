@@ -4,74 +4,130 @@
 const express = require('express');
 const router = express.Router();
 const Calendar = require('../models').Calendar;
-const Product = require('../models').Product;
+const models = require('../models');
 
 /* Calendars api */
 router
 .get('/:userId',  (req, res, next) => {
-  let User = res.locals.User;
+  models.User.findById(req.params.userId)
+  .then(user => {
+    if (user === null) {
+      return res.status(404).send({message: 'User not found'})
+    }
 
-  return Calendar
+    let Product = models.Product;
+
+    models.Calendar
     .findAll(
       {
         where: {'$Product.user_id$': req.params.userId},
         include: {model: Product, required: true }
-      }
-      )
+      })
     .then(calendars => {
-      if(!calendars) {
-        return res.status(404).send({message: 'Calendars no found'})
-      }
-      res.status(200).send(calendars);
+      return res.status(200).send(calendars);
     })
-    .catch(
-      error => res.status(400).send(error)
-  );
-
+    .catch(err => {
+      return res.status(400).send(err);
+    });
+  })
+  .catch(err => {
+    return res.status(400).send(err)
+  });
 })
 .get('/:userId/:calendarId', (req, res, next) => {
-  return Calendar
-  .find(
-    {
-      where: {
-        '$Product.user_id$': req.params.userId,
-        id: req.params.calendarId
-      },
-      include: {model: Product, required: true }
+  models.User.findById(req.params.userId)
+  .then(user => {
+    if (user === null) {
+      return res.status(404).send({message: 'User not found'})
     }
-  )
-  .then(calendar => {
-    if(!calendar) {
-      return res.status(404).send({message: 'Calendar no found'})
-    }
-    res.status(200).send(calendar);
+    let Product = models.Product;
+
+    models.Calendar
+    .findOne(
+      {
+        where: {
+          '$Product.user_id$': req.params.userId,
+          id: req.params.calendarId
+        },
+        include: {model: Product, required: true }
+      }
+    )
+    .then(calendar => {
+      if(calendar === null) {
+        return res.status(404).send({message: 'Calendar no found'})
+      }
+      return res.status(200).send(calendar);
+    })
+    .catch(err => {
+      return res.status(400).send(error)
+    });
   })
-  .catch(error => res.status(400).send(error));
+  .catch(err => {
+    return res.status(400).send(err)
+  });
+
 })
 .post('/:productId', (req, res, next) => {
-  return Calendar
-  .create({
-    title: req.body.title,
-    product_id: req.params.productId
+
+  models.Product.findById(req.params.productId)
+  .then(product => {
+    if(product === null) {
+      return res.status(404).send({message: 'Product no found'})
+    }
+    models.Calendar
+    .create({
+      title: req.body.title,
+      product_id: req.params.productId
+    })
+    .then((calendar) => {
+      return res.status(201).send(calendar);
+    })
+    .catch((err) => {
+      return res.status(400).send(err);
+    });
   })
-  .then((calendar) =>
-    res.status(201).send(calendar)
-  )
-  .catch((error) => res.status(400).send(error));
+  .catch(err => {
+    return res.status(400).send(err);
+  });
 })
-.patch('/:calendarId', (req, res, hext) => {
-  return Calendar
-    .findById(req.params.calendarId)
+.patch('/:userId/:calendarId', (req, res, next) => {
+  models.User.findById(req.params.userId)
+  .then(user => {
+    if (user === null) {
+      return res.status(404).send({message: 'User not found'})
+    }
+
+    let Product = models.Product;
+
+    models.Calendar
+    .findOne({
+        where: {
+          '$Product.user_id$': req.params.userId,
+          id: req.params.calendarId
+        },
+        include: {model: Product, required: true }
+      }
+    )
     .then( calendar => {
-      return calendar
-      .update({title: req.body.title})
-      .then(
-        () => res.status(200).send(calendar)
-      )
-      .catch(
-        (error) => res.status(400).send(error)
-      );
+      if(calendar === null) {
+        return res.status(404).send({message: 'Calendar no found'})
+      }
+      calendar.update({title: req.body.title})
+      .then(calendar => {
+        return res.status(200).send(calendar)
+      })
+      .catch(err => {
+        return res.status(400).send(err);
+      });
+    })
+    .catch(err => {
+      return res.status(400).send(err);
+    })
   })
+  .catch(err => {
+    return res.status(400).send(err)
+  });
+
 });
 
 module.exports = router;
