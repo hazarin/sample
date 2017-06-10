@@ -12,6 +12,8 @@ const passport = require('passport');
 const flash = require('express-flash');
 const mailer = require('express-mailer');
 
+const FileStore = require('session-file-store')(expressSession);
+
 const index = require('./routes/index');
 const login = require('./routes/login');
 const logout = require('./routes/logout');
@@ -40,6 +42,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(expressSession({
+  store: new FileStore,
   secret: 'adailyclock secret',
   resave: false,
   saveUninitialized: false,
@@ -48,6 +51,7 @@ app.use(expressSession({
     expires : new Date(Date.now() + 7200000), //2 Hour
   },
 }));
+
 app.use(flash());
 app.use(express.static(path.join(__dirname, 'public')));
 
