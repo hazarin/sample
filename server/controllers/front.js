@@ -255,26 +255,72 @@ router
   let from = new Date(req.query.from);
   let to = new Date(req.query.to);
 
-  models.Activity
-  .findAll(
-    {
-      where: {
-        '$Calendar.id$': req.params.calendarId,
-        activity_date: {$between:[from, to]}
-      },
-      include: {model: Calendar, required: true }
+  let query = `
+  SELECT dt.dt, ac.* FROM Dates as dt
+  LEFT JOIN (
+    SELECT * FROM Activities WHERE ((activity_date < :dt_to AND \`repeat\` != 'not')
+                                   OR (activity_date BETWEEN :dt_from AND :dt_to)) 
+                                   AND (calendar_id = :calendar_id)
+
+          ) as ac ON (
+        CASE ac.repeat
+          WHEN 'not' THEN ac.activity_date
+          WHEN 'day'
+          THEN
+            ac.activity_date + IF(DATEDIFF(dt.dt, ac.activity_date) >= 0, DATEDIFF(dt.dt, ac.activity_date), 0)
+          WHEN 'week'
+          THEN
+            ac.activity_date + IF(DATEDIFF(dt.dt, ac.activity_date) >= 0 AND DATEDIFF(dt.dt, ac.activity_date) MOD 7 = 0, DATEDIFF(dt.dt, ac.activity_date), 0)
+          WHEN 'month'
+          THEN
+            DATE_ADD(ac.activity_date, INTERVAL IF(DATEDIFF(dt.dt, ac.activity_date)>=0 AND DAY(dt.dt)=DAY(ac.activity_date), DATEDIFF(dt.dt, ac.activity_date), 0) DAY)
+        END
+      )=dt.dt
+ WHERE
+  dt.dt BETWEEN :dt_from AND :dt_to
+ ORDER BY dt.dt, ac.activity_time;`;
+
+  models.sequelize.query(query,
+  {
+    model: models.Activity,
+    replacements: {
+      dt_from: from,
+      dt_to: to,
+      calendar_id: req.params.calendarId,
+      type: models.sequelize.QueryTypes.SELECT
     }
-  )
+  })
   .then(activities => {
     if(!activities) {
       return res.status(404).send({message: 'Activities no found'})
     }
     return res.status(200).send(activities);
   })
-  .catch(
-    error => {
-      return res.status(400).send(error)
-    });
+  .catch(error =>
+  {
+        return res.status(400).send(error)
+  });
+
+  // models.Activity
+  // .findAll(
+  //   {
+  //     where: {
+  //       '$Calendar.id$': req.params.calendarId,
+  //       activity_date: {$between:[from, to]}
+  //     },
+  //     include: {model: Calendar, required: true }
+  //   }
+  // )
+  // .then(activities => {
+  //   if(!activities) {
+  //     return res.status(404).send({message: 'Activities no found'})
+  //   }
+  //   return res.status(200).send(activities);
+  // })
+  // .catch(
+  //   error => {
+  //     return res.status(400).send(error)
+  //   });
 
 })
 .get('/confirm/:confirmKey', (req, res, next) => {
@@ -430,7 +476,9 @@ router
   .findAll({type: 'membership'})
   .then((items) => {
     return res.status(200).send(items);
-  }).catch(error => res.status(400).send(error));
+  }).catch(error => {
+    return res.status(400).send(error)
+  });
 })
 .get('/', (req, res, next) => {
 
