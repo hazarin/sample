@@ -254,30 +254,31 @@ router
   const Calendar = models.Calendar;
   let from = new Date(req.query.from);
   let to = new Date(req.query.to);
+  from = new Date(from.getFullYear(), from.getMonth(), from.getDate(), 0, 0, 0);
+  to = new Date(to.getFullYear(), to.getMonth(), to.getDate(), 0, 0, 0);
 
   let query = `
   SELECT dt.dt, ac.* FROM Dates as dt
   LEFT JOIN (
-    SELECT * FROM Activities WHERE ((activity_date < :dt_to AND \`repeat\` != 'not')
-                                   OR (activity_date BETWEEN :dt_from AND :dt_to)) 
+    SELECT * FROM Activities WHERE ((activity_date <= :dt_to AND \`repeat\` != 'not')
+                                   OR (activity_date >= :dt_from AND :dt_to >= activity_date)) 
                                    AND (calendar_id = :calendar_id)
-
           ) as ac ON (
         CASE ac.repeat
           WHEN 'not' THEN ac.activity_date
           WHEN 'day'
           THEN
-            ac.activity_date + IF(DATEDIFF(dt.dt, ac.activity_date) >= 0, DATEDIFF(dt.dt, ac.activity_date), 0)
+            DATE_ADD(ac.activity_date, INTERVAL IF(DATEDIFF(dt.dt, ac.activity_date) >= 0, DATEDIFF(dt.dt, ac.activity_date), 0) DAY)
           WHEN 'week'
           THEN
-            ac.activity_date + IF(DATEDIFF(dt.dt, ac.activity_date) >= 0 AND DATEDIFF(dt.dt, ac.activity_date) MOD 7 = 0, DATEDIFF(dt.dt, ac.activity_date), 0)
+            DATE_ADD(ac.activity_date, INTERVAL IF(DATEDIFF(dt.dt, ac.activity_date) >= 0 AND DATEDIFF(dt.dt, ac.activity_date) MOD 7 = 0, DATEDIFF(dt.dt, ac.activity_date), 0) DAY)
           WHEN 'month'
           THEN
             DATE_ADD(ac.activity_date, INTERVAL IF(DATEDIFF(dt.dt, ac.activity_date)>=0 AND DAY(dt.dt)=DAY(ac.activity_date), DATEDIFF(dt.dt, ac.activity_date), 0) DAY)
         END
       )=dt.dt
  WHERE
-  dt.dt BETWEEN :dt_from AND :dt_to
+  dt.dt >= :dt_from AND :dt_to >= dt.dt
  ORDER BY dt.dt, ac.activity_time;`;
 
   models.sequelize.query(query,

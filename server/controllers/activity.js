@@ -22,25 +22,73 @@ router
 
     let from = new Date(req.query.from);
     let to = new Date(req.query.to);
-    models.Activity
-    .findAll(
+    from = new Date(from.getFullYear(), from.getMonth(), from.getDate(), 0, 0, 0);
+    to = new Date(to.getFullYear(), to.getMonth(), to.getDate(), 0, 0, 0);
+
+    let query = `
+      SELECT dt.dt, ac.* FROM Dates as dt
+      LEFT JOIN (
+        SELECT * FROM Activities WHERE ((activity_date <= :dt_to AND \`repeat\` != 'not')
+                                       OR (activity_date >= :dt_from AND :dt_to >= activity_date)) 
+                                       AND (calendar_id = :calendar_id)
+              ) as ac ON (
+            CASE ac.repeat
+              WHEN 'not' THEN ac.activity_date
+              WHEN 'day'
+              THEN
+                DATE_ADD(ac.activity_date, INTERVAL IF(DATEDIFF(dt.dt, ac.activity_date) >= 0, DATEDIFF(dt.dt, ac.activity_date), 0) DAY)
+              WHEN 'week'
+              THEN
+                DATE_ADD(ac.activity_date, INTERVAL IF(DATEDIFF(dt.dt, ac.activity_date) >= 0 AND DATEDIFF(dt.dt, ac.activity_date) MOD 7 = 0, DATEDIFF(dt.dt, ac.activity_date), 0) DAY)
+              WHEN 'month'
+              THEN
+                DATE_ADD(ac.activity_date, INTERVAL IF(DATEDIFF(dt.dt, ac.activity_date)>=0 AND DAY(dt.dt)=DAY(ac.activity_date), DATEDIFF(dt.dt, ac.activity_date), 0) DAY)
+            END
+          )=dt.dt
+     WHERE
+      dt.dt >= :dt_from AND :dt_to >= dt.dt
+     ORDER BY dt.dt, ac.activity_time;`;
+
+    models.sequelize.query(query,
       {
-        where: {
-          '$Calendar.id$': req.params.calendarId,
-          activity_date: {$between:[from, to]}
-        },
-        include: {model: Calendar, required: true }
-      }
-    )
+        model: models.Activity,
+        replacements: {
+          dt_from: from,
+          dt_to: to,
+          calendar_id: req.params.calendarId,
+          type: models.sequelize.QueryTypes.SELECT
+        }
+      })
     .then(activities => {
       if(!activities) {
         return res.status(404).send({message: 'Activities no found'})
       }
       return res.status(200).send(activities);
     })
-    .catch(err => {
-      return res.status(400).send(err);
+    .catch(err =>
+    {
+      return res.status(400).send(err)
     });
+
+    // models.Activity
+    // .findAll(
+    //   {
+    //     where: {
+    //       '$Calendar.id$': req.params.calendarId,
+    //       activity_date: {$between:[from, to]}
+    //     },
+    //     include: {model: Calendar, required: true }
+    //   }
+    // )
+    // .then(activities => {
+    //   if(!activities) {
+    //     return res.status(404).send({message: 'Activities no found'})
+    //   }
+    //   return res.status(200).send(activities);
+    // })
+    // .catch(err => {
+    //   return res.status(400).send(err);
+    // });
   })
   .catch(err => {
     return res.status(400).send(err);
