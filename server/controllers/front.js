@@ -5,6 +5,7 @@ const express = require('express');
 const router = express.Router();
 const models = require('../models');
 const uuid = require('uuid');
+const stripe = require('stripe')('sk_test_vOjqB6NtzHpG8ULopkDpODOG');
 
 const addOrder = (user) => {
   let serial = uuid.v1();
@@ -371,7 +372,7 @@ router
       return res.status(400).send(err);
     } else {
 
-      addOrder(user);
+      // addOrder(user);
 
       let mailer = res.locals.mailer;
       confirmUrl = confirmUrl + user.activationKey;
@@ -384,11 +385,98 @@ router
           console.log(err);
           return res.status(400).send('There was an error sending the email');
         }
-        return res.status(200).send({message: 'Mail send'});
+        let serial = uuid.v1();
+
+        models.Catalog.findOne({where: {membership: 'time'}}).then((catalog) => {
+          models.Product.build({serial: serial}).save()
+          .then((product) => {
+            let title = 'Order to product with serial number ' + product.serial
+            models.Order.build(
+              {
+                title: title,
+                product_id: product.id,
+                user_id: user.id,
+                catalog_id: catalog.id,
+                amount: catalog.price,
+              }
+            ).save().then(order => {
+              return res.status(200).send(order);
+            });
+          })
+          .catch((err) => {
+            return res.status(400).send(err);
+          });
+        });
       });
     }
 
   });
+})
+.post('/order/:orderId', (req, res, next) => {
+
+  let cardToken = req.body.token;
+  let amount = req.body.amount;
+
+  models.User.findById(req.body.user_id)
+  .then(user => {
+    stripe.charges.create({
+      amount: amount * 100,
+      currency: 'usd',
+      source: cardToken,
+      description: "Single donation charge"
+    }, (err, charge) => {
+      if(err) {
+        return res.status(400).send(err);
+      }
+      models.Order.findOne({where: {user_id: user.id}})
+      .then((order) => {
+        order.getProduct()
+        .then(product => {
+
+          product.setUser(user)
+          .then(() => {
+            models.Calendar.build({title: product.serial, product_id: product.id})
+            .save().then(calendar => {
+                return res.status(200).send(charge);
+            });
+          })
+        })
+      })
+
+    });
+  })
+  .catch(err => {
+    return res.status(400).send(err);
+  })
+
+})
+.get('/order/:orderId', (req, res, next) => {
+
+  models.Order.findById(
+    req.params.orderId,
+    {
+      include: [
+        {
+          model: models.Catalog,
+        },
+        {
+          model: models.User,
+        }
+      ]
+    })
+  .then(order => {
+    if (order === null) {
+      return res.status(404).send('Order not found');
+    };
+    if (order.paymentAt !== null) {
+      return res.status(400).send('Already payed');
+    };
+    return res.status(200).send(order);
+  })
+  .catch(err => {
+    return res.status(400).send(err);
+  });
+
 })
 .post('/reset/:resetKey', (req, res, next) => {
   if (req.isAuthenticated()) {
@@ -400,7 +488,7 @@ router
     return res.status(400).send({message: "Passwords didn't match"});
   }
 
-  return models.User.findOne({where: {resetPasswordKey: req.params.resetKey, verified: true}})
+  models.User.findOne({where: {resetPasswordKey: req.params.resetKey, verified: true}})
   .then(user => {
     if (user === null) {
       return res.status(404).send({message: 'User no found'});
@@ -421,7 +509,7 @@ router
     return res.status(400).send({message: 'Already logged in'});
   }
 
-  return models.User.findOne({where: {resetPasswordKey: req.params.resetKey, verified: true}})
+  models.User.findOne({where: {resetPasswordKey: req.params.resetKey, verified: true}})
   .then(user => {
     if (user === null) {
       return res.status(404).send({message: 'User no found'});
@@ -473,7 +561,7 @@ router
 })
 .get('/membership', (req, res, next) => {
 
-  return models.Catalog
+  models.Catalog
   .findAll({type: 'membership'})
   .then((items) => {
     return res.status(200).send(items);
@@ -487,7 +575,7 @@ router
     return res.status(401).send({message: 'Authentication requred'})
   }
 
-  return models.User.find({where: {id: req.user.id}}).then(user => {
+  models.User.find({where: {id: req.user.id}}).then(user => {
     if (!user) {
       return res.status(404).send({message: 'User no found'})
     }
