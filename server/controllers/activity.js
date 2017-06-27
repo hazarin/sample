@@ -4,10 +4,11 @@
 const express = require('express');
 const router = express.Router();
 const models = require('../models');
+const passport = require('passport');
 
 /* Activity api */
 router
-.get('/:calendarId',  (req, res, next) => {
+.get('/:calendarId', passport.authenticate('jwt', { session: false }),  (req, res, next) => {
   let Calendar = models.Calendar;
 
   if (req.query.from === undefined || req.query.to === undefined) {
@@ -94,7 +95,7 @@ router
     return res.status(400).send(err);
   });
 })
-.get('/:calendarId/:activityId', (req, res, next) => {
+.get('/:calendarId/:activityId', passport.authenticate('jwt', { session: false }), (req, res, next) => {
   let Calendar = models.Calendar;
 
   models.Activity
@@ -117,7 +118,7 @@ router
     return res.status(400).send(err)
   });
 })
-.post('/:calendarId', (req, res, next) => {
+.post('/:calendarId', passport.authenticate('jwt', { session: false }), (req, res, next) => {
 
   models.Calendar.findById(req.params.calendarId)
   .then(calendar => {
@@ -146,7 +147,7 @@ router
     return res.status(400).send(err)
   });
 })
-.patch('/:activityId', (req, res, next) => {
+.patch('/:activityId', passport.authenticate('jwt', { session: false }), (req, res, next) => {
   models.Activity.findById(req.params.activityId)
   .then(activity => {
     if(activity === null) {

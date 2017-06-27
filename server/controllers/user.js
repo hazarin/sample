@@ -4,16 +4,18 @@
 const express = require('express')
 const router = express.Router()
 const models = require('../models');
+const passport = require('passport');
+const jwt = require('jsonwebtoken');
 
 /* GET User. */
 router
-.get('/:id', (req, res, next) => {
+.get('/:userId', passport.authenticate('jwt', {session: false}), (req, res, next) => {
 
-  return models.User.find({where: {id: req.params.id}}).then(user => {
+  return models.User.find({where: {id: req.params.userId}}).then(user => {
     if (!user) {
       return res.status(404).send({message: 'User no found'})
     }
-    res.status(200).send({
+    return res.status(200).send({
       email: user.email,
       verified: user.verified,
       firstName: user.firstName,
@@ -25,17 +27,15 @@ router
       country: user.country,
       membership: user.membership,
     })
-  }).catch(error => {
-    return res.status(400).send(error)
+  })
+  .catch(err => {
+    return res.status(400).send(err)
   })
 
 })
-.get('/', (req, res, next) => {
+.get('/', passport.authenticate('jwt', { session: false }), (req, res, next) => {
     let User = res.locals.User
 
-    if (!req.isAuthenticated()) {
-      return res.status(401).send({message: 'Authentication requred'});
-    }
     return User.find({where: {id: req.user.id}}).then(user => {
       if (!user) {
         return res.status(404).send({message: 'User no found'})
@@ -52,31 +52,28 @@ router
         country: user.country,
         membership: user.membership,
       })
-    }).catch(error => res.status(400).send(error))
-
-  })
+    })
+    .catch(err => res.status(400).send(err))
+})
 .post('/login', (req, res, next) => {
-  let User = res.locals.User;
-
   let passport = res.locals.passport;
+  let jwtOptions = res.locals.app.get('jwtOptions');
 
-  if (req.isAuthenticated()) {
-    return res.status(200).send({message: 'Already logged in'});
-  }
-
-  return passport.authenticate('local',
+  return passport.authenticate('local', { session: false },
     (err, user, info) => {
       return err
         ? res.status(400).send(err)
         : user
           ? req.logIn(user, (err) => {
-            return err
-              ? res.status(400).send(err)
-              : res.status(200).send(user);
+            if (err) {
+              return res.status(400).send(err)
+            }
+            let payload = {id: user.id};
+            let token = jwt.sign(payload, jwtOptions.secretOrKey);
+            return res.status(200).send({message: "ok", token: token});
           })
           : res.status(400).send(info);
     })(req, res, next);
+});
 
-})
-
-module.exports = router
+module.exports = router;

@@ -5,10 +5,11 @@ const express = require('express');
 const router = express.Router();
 const Calendar = require('../models').Calendar;
 const models = require('../models');
+const passport = require('passport');
 
 /* Calendars api */
 router
-.get('/:userId',  (req, res, next) => {
+.get('/:userId', passport.authenticate('jwt', { session: false }),  (req, res, next) => {
   models.User.findById(req.params.userId)
   .then(user => {
     if (user === null) {
@@ -34,7 +35,7 @@ router
     return res.status(400).send(err)
   });
 })
-.get('/:userId/:calendarId', (req, res, next) => {
+.get('/:userId/:calendarId', passport.authenticate('jwt', { session: false }), (req, res, next) => {
   models.User.findById(req.params.userId)
   .then(user => {
     if (user === null) {
@@ -67,7 +68,7 @@ router
   });
 
 })
-.post('/:productId', (req, res, next) => {
+.post('/:productId', passport.authenticate('jwt', { session: false }), (req, res, next) => {
 
   models.Product.findById(req.params.productId)
   .then(product => {
@@ -90,7 +91,7 @@ router
     return res.status(400).send(err);
   });
 })
-.patch('/:userId/:calendarId', (req, res, next) => {
+.patch('/:userId/:calendarId', passport.authenticate('jwt', { session: false }), (req, res, next) => {
   models.User.findById(req.params.userId)
   .then(user => {
     if (user === null) {

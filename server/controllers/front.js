@@ -5,7 +5,9 @@ const express = require('express');
 const router = express.Router();
 const models = require('../models');
 const uuid = require('uuid');
+const jwt = require('jsonwebtoken');
 const stripe = require('stripe')('sk_test_vOjqB6NtzHpG8ULopkDpODOG');
+const passport = require('passport');
 
 const addOrder = (user) => {
   let serial = uuid.v1();
@@ -50,15 +52,11 @@ const activateOrder = (user) => {
 }
 
 router
-.patch('/', (req, res, next) => {
+.patch('/', passport.authenticate('jwt', { session: false }), (req, res, next) => {
   let data = req.body;
   let disabled = {
     password: true,
   };
-
-  if (req.isAuthenticated() === false) {
-    return res.status(401).send({message: 'Authentication requred'});
-  }
 
   for(let key in disabled) {
     if(data.hasOwnProperty(key)) {
@@ -82,11 +80,8 @@ router
   })
 
 })
-.patch('/products', (req, res, next) => {
+.patch('/products', passport.authenticate('jwt', { session: false }), (req, res, next) => {
   let data = req.body;
-  if (req.isAuthenticated() === false) {
-    return res.status(401).send({message: 'Authentication requred'});
-  }
 
   for(let index in data) {
     if (data.hasOwnProperty(index)) {
@@ -118,10 +113,7 @@ router
   });
 
 })
-.post('/products', (req, res, next) => {
-  if (req.isAuthenticated() === false) {
-    return res.status(401).send({message: 'Authentication requred'});
-  }
+.post('/products', passport.authenticate('jwt', { session: false }), (req, res, next) => {
 
   models.Product.findOne({
     where: {
@@ -149,10 +141,7 @@ router
   })
 
 })
-.get('/products', (req, res, next) => {
-  if (req.isAuthenticated() === false) {
-    return res.status(401).send({message: 'Authentication requred'});
-  }
+.get('/products', passport.authenticate('jwt', { session: false }), (req, res, next) => {
 
   models.Product.findAll({where: {user_id: req.user.id }})
   .then(products => {
@@ -162,12 +151,7 @@ router
     return res.status(400).send(err);
   })
 })
-.get('/calendars', (req, res, next) => {
-
-  if (req.isAuthenticated() === false) {
-    return res.status(401).send({message: 'Authentication required'});
-  }
-
+.get('/calendars', passport.authenticate('jwt', { session: false }), (req, res, next) => {
   const Product = models.Product;
 
   models.Calendar.findAll(
@@ -186,14 +170,10 @@ router
     error => { return res.status(400).send(error) });
 
 })
-.delete('/activities/:calendarId/:activityId', (req, res, next) => {
+.delete('/activities/:calendarId/:activityId', passport.authenticate('jwt', { session: false }), (req, res, next) => {
   const Calendar = models.Calendar;
   const Product = models.Product;
   const Activity = models.Activity;
-
-  if (req.isAuthenticated() === false) {
-    return res.status(401).send({message: 'Authentication requred'});
-  }
 
   models.Activity.destroy({
     where:{id: req.params.activityId, calendar_id: req.params.calendarId}})
@@ -205,14 +185,10 @@ router
   });
 
 })
-.post('/activities/:calendarId', (req, res, next) => {
+.post('/activities/:calendarId', passport.authenticate('jwt', { session: false }), (req, res, next) => {
   const Calendar = models.Calendar;
   const Product = models.Product;
   const Activity = models.Activity;
-
-  if (req.isAuthenticated() === false) {
-    return res.status(401).send({message: 'Authentication requred'});
-  }
 
   models.Calendar.findOne(
     {
@@ -241,17 +217,13 @@ router
 
   })
   .catch(
-    error => {
+    err => {
       return res.status(400).send(error)
     });
 
 
 })
-.get('/activities/:calendarId',  (req, res, next) => {
-  if (req.isAuthenticated() === false) {
-    return res.status(401).send({message: 'Authentication requred'});
-  }
-
+.get('/activities/:calendarId', passport.authenticate('jwt', { session: false }),  (req, res, next) => {
   const Calendar = models.Calendar;
   let from = new Date(req.query.from);
   let to = new Date(req.query.to);
@@ -569,11 +541,7 @@ router
     return res.status(400).send(error)
   });
 })
-.get('/', (req, res, next) => {
-
-  if (!req.isAuthenticated()) {
-    return res.status(401).send({message: 'Authentication requred'})
-  }
+.get('/', passport.authenticate('jwt', { session: false }), (req, res, next) => {
 
   models.User.find({where: {id: req.user.id}}).then(user => {
     if (!user) {
@@ -594,7 +562,7 @@ router
   }).catch(error => res.status(400).send(error))
 
 })
-.get('/logout', (req, res, next) => {
+.get('/logout', passport.authenticate('jwt', { session: false }), (req, res, next) => {
   if (req.isAuthenticated() === false) {
     return res.status(400).send({message: 'Not logged in'});
   }
@@ -616,34 +584,21 @@ router
 
 })
 .post('/login', (req, res, next) => {
-  let User = res.locals.User;
-
   let passport = res.locals.passport;
+  let jwtOptions = res.locals.app.get('jwtOptions');
 
-  if (req.isAuthenticated()) {
-    return res.status(200).send({message: 'Already logged in'});
-  }
-
-  return passport.authenticate('local',
+  return passport.authenticate('local', { session: false },
     (err, user, info) => {
       return err
         ? res.status(400).send(err)
         : user
           ? req.logIn(user, (err) => {
-            return err
-              ? res.status(400).send(err)
-              : res.status(200).send({
-                email: user.email,
-                verified: user.verified,
-                firstName: user.firstName,
-                surName: user.surName,
-                address: user.address,
-                postalCode: user.postalCode,
-                city: user.city,
-                phone: user.phone,
-                country: user.country,
-                membership: user.membership,
-              });
+            if (err) {
+                return res.status(400).send(err)
+            }
+            let payload = {id: user.id};
+            let token = jwt.sign(payload, jwtOptions.secretOrKey);
+            return res.status(200).send({message: "ok", token: token});
           })
           : res.status(400).send(info);
     })(req, res, next);

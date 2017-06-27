@@ -9,10 +9,12 @@ const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const expressSession = require('express-session');
 const passport = require('passport');
+const passportJwt = require('passport-jwt');
+const jwt = require('jsonwebtoken');
 const flash = require('express-flash');
 const mailer = require('express-mailer');
 
-const FileStore = require('session-file-store')(expressSession);
+// const FileStore = require('session-file-store')(expressSession);
 
 const index = require('./routes/index');
 const login = require('./routes/login');
@@ -28,6 +30,11 @@ const app = express();
 //Swagger doc
 const sw = express();
 
+const jwtOptions = {
+  jwtFromRequest: passportJwt.ExtractJwt.fromAuthHeader(),
+  secretOrKey: 'adaylyclock_secret',
+  passReqToCallback: true,
+};
 
 mailer.extend(app, config.mailer);
 
@@ -41,36 +48,55 @@ app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(expressSession({
-  store: new FileStore,
-  secret: 'adailyclock secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge  : new Date(Date.now() + 7200000), //2 Hour
-    expires : new Date(Date.now() + 7200000), //2 Hour
-  },
-}));
+// app.use(expressSession({
+//   store: new FileStore,
+//   secret: 'adailyclock_secret',
+//   resave: false,
+//   saveUninitialized: false,
+//   cookie: {
+//     maxAge  : new Date(Date.now() + 7200000), //2 Hour
+//     expires : new Date(Date.now() + 7200000), //2 Hour
+//   },
+// }));
 
 app.use(flash());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.set('config', config);
-app.set('config', config);
 app.set('User', User);
 app.set('Passport', passport);
+app.set('jwtOptions', jwtOptions);
 
 app.use(passport.initialize());
-app.use(passport.session());
+// app.use(passport.session());
 
 passport.use(User.createStrategy());
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-app.use(function(req,res,next){
+passport.use(new passportJwt.Strategy(jwtOptions, (req, payload, next) => {
+    models.User.findById(payload.id)
+    .then((user) => {
+      if (user) {
+        if (req.params.userId && parseInt(req.params.userId) !== user.id && user.isAdmin === false) {
+          next(null, false)
+        }
+        next(null, user)
+      } else {
+        next(null, false)
+      }
+    })
+    .catch((err) => {
+      next(err, false);
+    })
+  })
+);
+
+
+app.use((req,res,next) => {
   res.header('Access-Control-Allow-Origin', app.get('config').frontend.uri);
   res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.header('Access-Control-Allow-Methods', 'GET, HEAD, POST, PATCH, OPTIONS, DELETE');
   res.header('Allow', 'GET, HEAD, POST, PATCH, OPTIONS, DELETE');
   res.locals.isAuthenticated = req.isAuthenticated();
@@ -104,14 +130,14 @@ app.get('/api/doc', function (req, res, next) {
 swagger.configureSwaggerPaths('', 'api/doc', '');
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use((req, res, next) => {
   const err = new Error('Not Found');
   err.status = 404;
   next(err);
 });
 
 // error handler
-app.use(function(err, req, res, next) {
+app.use((err, req, res, next) => {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};

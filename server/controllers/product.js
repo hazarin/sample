@@ -5,10 +5,11 @@ const express = require('express');
 const router = express.Router();
 const uuid  = require('uuid/v4');
 const models = require('../models');
+const passport = require('passport');
 
 /* Products api */
 router
-.get('/:userId',  (req, res, next) => {
+.get('/:userId', passport.authenticate('jwt', { session: false }), (req, res, next) => {
 
   models.User.findById(req.params.userId)
   .then(user => {
@@ -29,7 +30,7 @@ router
   });
 
 })
-.get('/:userId/:productId', (req, res, next) => {
+.get('/:userId/:productId', passport.authenticate('jwt', { session: false }), (req, res, next) => {
   models.User.findById(req.params.userId)
   .then(user => {
     if (user === null) {
@@ -54,7 +55,7 @@ router
     return res.status(400).send(err)
   });
 })
-.post('/', (req, res, next) => {
+.post('/', passport.authenticate('jwt', { session: false }), (req, res, next) => {
   let serial = uuid();
   models.Product
   .create({
@@ -68,7 +69,7 @@ router
     return res.status(400).send(err)
   });
 })
-.patch('/:userId/:productId', (req, res, hext) => {
+.patch('/:userId/:productId', passport.authenticate('jwt', { session: false }), (req, res, hext) => {
   models.User.findById(req.params.userId)
   .then(user => {
     if (user === null) {
