@@ -41,6 +41,7 @@ router
         return res.status(404).send({message: 'User no found'})
       }
       res.status(200).send({
+        id: user.id,
         email: user.email,
         verified: user.verified,
         firstName: user.firstName,
