@@ -14,7 +14,7 @@ const jwt = require('jsonwebtoken');
 const flash = require('express-flash');
 const mailer = require('express-mailer');
 
-// const FileStore = require('session-file-store')(expressSession);
+const FileStore = require('session-file-store')(expressSession);
 
 const index = require('./routes/index');
 const login = require('./routes/login');
@@ -48,16 +48,16 @@ app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
-// app.use(expressSession({
-//   store: new FileStore,
-//   secret: 'adailyclock_secret',
-//   resave: false,
-//   saveUninitialized: false,
-//   cookie: {
-//     maxAge  : new Date(Date.now() + 7200000), //2 Hour
-//     expires : new Date(Date.now() + 7200000), //2 Hour
-//   },
-// }));
+app.use(expressSession({
+  store: new FileStore,
+  secret: 'adailyclock_secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge  : new Date(Date.now() + 7200000), //2 Hour
+    expires : new Date(Date.now() + 7200000), //2 Hour
+  },
+}));
 
 app.use(flash());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -68,7 +68,7 @@ app.set('Passport', passport);
 app.set('jwtOptions', jwtOptions);
 
 app.use(passport.initialize());
-// app.use(passport.session());
+app.use(passport.session());
 
 passport.use(User.createStrategy());
 passport.serializeUser(User.serializeUser());
